@@ -1,8 +1,9 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
-	"myzinx/utils"
+	"io"
 	"myzinx/ziface"
 	"net"
 )
@@ -46,17 +47,38 @@ func (c *Connection) StartReader() {
 	defer c.Stop()
 
 	for {
-		buf := make([]byte, utils.GlobalObject.MaxPackageSize)
-		_, err := c.Conn.Read(buf)
-		if err != nil {
-			fmt.Println("recv buf err", err)
-			continue
+		// 创建一个拆包解包的对象
+		dp := NewDataPack()
+
+		// 读取客户端的Msg Head二进制流的8个字节
+		headData := make([]byte, dp.GetHeadLen())
+		if _, err := io.ReadFull(c.GetTCPConnection(), headData); err != nil {
+			fmt.Println("read msg head error ", err)
+			break
 		}
+
+		// 拆包 得到MsgID和msgDatalen放在一个msg消息中
+		msg, err := dp.UnPack(headData)
+		if err != nil {
+			fmt.Println("unpack error ", err)
+			break
+		}
+
+		// 根据datalen读取Data，放在Msg.Data中
+		var Data []byte
+		if msg.GetMsgLen() > 0 {
+			Data = make([]byte, msg.GetMsgLen())
+			if _, err := io.ReadFull(c.GetTCPConnection(), Data); err != nil {
+				fmt.Println("read msg data error ", err)
+				break
+			}
+		}
+		msg.SetData(Data)
 
 		// 得到当前conn数据的Request请求数据
 		req := Request{
 			conn: c,
-			data: buf,
+			msg:  msg,
 		}
 
 		// 执行注册的路由方法
@@ -111,8 +133,25 @@ func (c *Connection) RemoteAddr() net.Addr {
 	return c.Conn.RemoteAddr()
 }
 
-// 发送数据 将数据发送给远程的客户端
+// 提供一个SendMsg方法 将我们要发送给客户端的数据先进行封包再发送
+func (c *Connection) SendMsg(msgId uint32, data []byte) error {
+	if c.isClosed == true {
+		return errors.New("Connection closed when send msg")
+	}
 
-func (c *Connection) Send(data []byte) error {
+	// 将data进行封包 MsgDataLen/MsgID/Data
+	dp := NewDataPack()
+
+	binaryMsg, err := dp.Pack(NewMsgPackage(msgId, data))
+	if err != nil {
+		fmt.Println("Pack error msg id = ", msgId)
+		return errors.New("Pack eeror msg")
+	}
+
+	// 将数据发送给客户端
+	if _, err := c.Conn.Write(binaryMsg); err != nil {
+		fmt.Println("Write msg id = ", msgId, "error :", err)
+		return errors.New("conn Write error")
+	}
 	return nil
 }

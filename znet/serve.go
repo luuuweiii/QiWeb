@@ -34,7 +34,7 @@ func (s *Server) Start() {
 		// 将地址解析为一个结构体
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {
-			fmt.Printf("resolve tcp addt error :", err)
+			fmt.Println("resolve tcp addt error :", err)
 			return
 		}
 
