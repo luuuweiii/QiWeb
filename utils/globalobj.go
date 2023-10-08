@@ -51,7 +51,7 @@ func init() {
 	// 如果配置文件没有加载 这将是一个默认值
 	GlobalObject = &GlobalObj{
 		Name:           "ZinxServerApp",
-		Version:        "V0.6",
+		Version:        "V0.7",
 		TcpPort:        8999,
 		Host:           "0.0.0.0",
 		MaxConn:        1000,
@@ -59,5 +59,5 @@ func init() {
 	}
 
 	// 尝试从conf/zinx.json去加载一些用户定义的参数
-	//GlobalObject.Reload()
+	GlobalObject.Reload()
 }
