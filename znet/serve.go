@@ -31,6 +31,9 @@ func (s *Server) Start() {
 
 	// 1.获取一个TCP的Addr
 	go func() {
+		// 0 开启消息队列和Worker工作池
+		s.MsgHandler.StartWorkerPool()
+
 		// 将地址解析为一个结构体
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {
