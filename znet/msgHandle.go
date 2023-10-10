@@ -76,7 +76,7 @@ func (m *MsgHandle) StartOneWorker(workerID int, taskQueue chan ziface.IRequest)
 	// 不断地阻塞等待对应消息队列的消息
 	for {
 		select {
-		// 如果有消息过俩，出列的就是一个客户端的Request，执行当前Request所绑定的业务
+		// 如果有消息过来，出列的就是一个客户端的Request，执行当前Request所绑定的业务
 		case request := <-taskQueue:
 			m.DoMsgHandler(request)
 		}
